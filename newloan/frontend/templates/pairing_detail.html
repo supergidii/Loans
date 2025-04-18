@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Pairing Details</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Pairing #{{ pairing.id }}</h5>
+            <p class="card-text">
+                <strong>New Investor:</strong> {{ pairing.investor.user.username }}<br>
+                <strong>Paired Investment:</strong> Investment #{{ pairing.paired_investment.id }}<br>
+                <strong>Original Investor:</strong> {{ pairing.paired_investment.investor.user.username }}<br>
+                <strong>Amount:</strong> ${{ pairing.paired_investment.amount }}<br>
+                <strong>Created:</strong> {{ pairing.created_at }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Create Investment</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="amount">Investment Amount:</label>
+            <input type="number" class="form-control" name="amount" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="maturation_date">Maturation Date:</label>
+            <input type="date" class="form-control" name="maturation_date" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Submit Investment</button>
+    </form>
+</div>
+{% endblock %} 

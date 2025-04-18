@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Investment Details</h2>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Investment #{{ investment.id }}</h5>
+            <p class="card-text">
+                <strong>Amount:</strong> ${{ investment.amount }}<br>
+                <strong>Created:</strong> {{ investment.created_at }}<br>
+                <strong>Maturation Date:</strong> {{ investment.maturation_date }}<br>
+                <strong>Status:</strong> 
+                {% if investment.is_matured %}
+                    Matured
+                {% else %}
+                    Active
+                {% endif %}
+                {% if investment.paired %}
+                    (Paired)
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %} 

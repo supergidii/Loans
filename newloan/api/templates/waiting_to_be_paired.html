@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Waiting to be Paired</h2>
+    
+    <!-- Unpaired Investments Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>Your Unpaired Investments</h3>
+        </div>
+        <div class="card-body">
+            {% if unpaired_investments %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Investment ID</th>
+                                <th>Amount</th>
+                                <th>Created Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for investment in unpaired_investments %}
+                            <tr>
+                                <td>#{{ investment.id }}</td>
+                                <td>${{ investment.amount }}</td>
+                                <td>{{ investment.created_at|date:"M d, Y" }}</td>
+                                <td><span class="badge bg-warning">Waiting for Pairing</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No unpaired investments found.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Pairings Section -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Pending Payment Confirmations</h3>
+        </div>
+        <div class="card-body">
+            {% if pending_pairings %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Paired With</th>
+                                <th>Amount</th>
+                                <th>Paired Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pairing in pending_pairings %}
+                            <tr>
+                                <td>{{ pairing.investor.user.username }}</td>
+                                <td>${{ pairing.paired_amount }}</td>
+                                <td>{{ pairing.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if pairing.paired_investment.investor.user == request.user %}
+                                        <span class="badge bg-info">Waiting for Payment</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Payment Pending Confirmation</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if pairing.paired_investment.investor.user == request.user %}
+                                        <a href="{% url 'api:confirm_payment' pairing.id %}" 
+                                           class="btn btn-success btn-sm">
+                                            Confirm Payment
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Waiting for payment confirmation</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No pending payment confirmations.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

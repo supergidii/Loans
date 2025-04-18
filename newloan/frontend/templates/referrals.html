@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}My Referrals - Investment Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h2>My Referrals</h2>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Referrals</h5>
+                    <h3 class="card-text">{{ total_referrals }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Earnings</h5>
+                    <h3 class="card-text">${{ total_earnings|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if referrals %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Username</th>
+                            <th>Date Joined</th>
+                            <th>Status</th>
+                            <th>Your Earnings</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for referral in referrals %}
+                        <tr>
+                            <td>{{ referral.referred_user.username }}</td>
+                            <td>{{ referral.referred_user.date_joined|date:"M d, Y" }}</td>
+                            <td>
+                                {% if referral.referred_user.investor.has_invested %}
+                                    <span class="badge bg-success">Active Investor</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Inactive Investor</span>
+                                {% endif %}
+                            </td>
+                            <td>${{ referral.earnings|floatformat:2 }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <p>You haven't referred any users yet. Share your referral link to start earning!</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

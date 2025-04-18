@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}Investment Status - Investment Platform{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Investment Status</h4>
+                    <a href="{% url 'api:dashboard' %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Back to Dashboard
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if investment %}
+                        <div class="mb-4">
+                            <h5>Investment Details</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <tr>
+                                        <th>Total Amount</th>
+                                        <td>${{ investment.amount }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Remaining Amount</th>
+                                        <td>${{ investment.remaining_amount }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Created Date</th>
+                                        <td>{{ investment.created_at|date:"F d, Y" }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Status</th>
+                                        <td>
+                                            {% if investment.remaining_amount == 0 %}
+                                                <span class="badge bg-success">Fully Paired</span>
+                                            {% elif investment.remaining_amount == investment.amount %}
+                                                <span class="badge bg-warning">Not Paired</span>
+                                            {% else %}
+                                                <span class="badge bg-info">Partially Paired</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>Daily Interest (1%)</th>
+                                        <td>${{ investment.calculate_daily_interest|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Interest Earned So Far</th>
+                                        <td>${{ investment.calculate_total_interest|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Projected Interest at Maturation</th>
+                                        <td>${{ investment.calculate_projected_interest|floatformat:2 }}</td>
+                                    </tr>
+                                    <tr class="table-success">
+                                        <th>End Return Amount</th>
+                                        <td><strong>${{ investment.calculate_end_return|floatformat:2 }}</strong></td>
+                                    </tr>
+                                    {% if investment.maturation_date %}
+                                    <tr>
+                                        <th>Maturation Date</th>
+                                        <td>
+                                            {{ investment.maturation_date|date:"F d, Y" }}
+                                            <br>
+                                            <div id="countdown" class="mt-2">
+                                                <span class="badge bg-primary">
+                                                    <span id="days">00</span>d 
+                                                    <span id="hours">00</span>h 
+                                                    <span id="minutes">00</span>m 
+                                                    <span id="seconds">00</span>s
+                                                </span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endif %}
+                                </table>
+                            </div>
+                        </div>
+
+                        {% if pairings %}
+                            <div class="mt-4">
+                                <h5>Pairing Details</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Amount</th>
+                                                <th>Remaining</th>
+                                                <th>Returns</th>
+                                                <th>Status</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for pairing in pairings %}
+                                                <tr>
+                                                    <td>{{ pairing.created_at|date:"F d, Y" }}</td>
+                                                    <td>${{ pairing.paired_amount }}</td>
+                                                    <td>${{ pairing.paired_investment.remaining_amount }}</td>
+                                                    <td>
+                                                        {% if pairing.paired_investment %}
+                                                            ${{ pairing.paired_investment.calculate_end_return|floatformat:2 }}
+                                                            <small class="text-muted d-block">
+                                                                (Principal: ${{ pairing.paired_investment.amount }}, 
+                                                                Interest: ${{ pairing.paired_investment.calculate_projected_interest|floatformat:2 }})
+                                                            </small>
+                                                        {% else %}
+                                                            <span class="text-danger">No paired investment found</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if pairing.confirmed %}
+                                                            <span class="badge bg-success">Confirmed</span>
+                                                        {% else %}
+                                                            <span class="badge bg-warning">Pending Confirmation</span>
+                                                        {% endif %}
+                                                    </td>
+                                                    <td>
+                                                        {% if not pairing.confirmed and pairing.paired_investment.investor.user == request.user %}
+                                                            <form method="post" action="{% url 'api:confirm_payment' pairing.id %}" class="d-inline">
+                                                                {% csrf_token %}
+                                                                <button type="submit" class="btn btn-sm btn-success">Confirm Payment</button>
+                                                            </form>
+                                                        {% endif %}
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                        {% if investment.remaining_amount > 0 %}
+                            <div class="alert alert-info mt-4">
+                                <h5 class="alert-heading">Waiting for Additional Pairings</h5>
+                                <p>Your investment has ${{ investment.remaining_amount }} remaining to be paired. The system will automatically pair this amount with matured investments as they become available.</p>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>No investment found. Please create a new investment to begin the pairing process.</p>
+                        </div>
+                    {% endif %}
+
+                    <div class="mt-4">
+                        <a href="{% url 'api:create_investment' %}" class="btn btn-primary">Create New Investment</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if investment.maturation_date %}
+<script>
+    // Set the date we're counting down to
+    const maturationDate = new Date("{{ investment.maturation_date|date:'c' }}").getTime();
+
+    // Update the countdown every 1 second
+    const countdownTimer = setInterval(function() {
+        // Get current date and time
+        const now = new Date().getTime();
+
+        // Find the distance between now and the maturation date
+        const distance = maturationDate - now;
+
+        // Time calculations for days, hours, minutes and seconds
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Display the result
+        document.getElementById("days").textContent = String(days).padStart(2, '0');
+        document.getElementById("hours").textContent = String(hours).padStart(2, '0');
+        document.getElementById("minutes").textContent = String(minutes).padStart(2, '0');
+        document.getElementById("seconds").textContent = String(seconds).padStart(2, '0');
+
+        // If the countdown is finished, display expired message
+        if (distance < 0) {
+            clearInterval(countdownTimer);
+            document.getElementById("countdown").innerHTML = '<span class="badge bg-success">Matured</span>';
+        }
+    }, 1000);
+</script>
+{% endif %}
+{% endblock %} 

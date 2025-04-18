@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Sell Shares{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Sell Your Shares</h1>
+
+    <!-- Available Investments Section -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Your Investments</h2>
+        </div>
+        <div class="card-body">
+            {% if available_investments or listed_sales %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Investment ID</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Returns</th>
+                                <th>Status</th>
+                                <th>Paired To</th>
+                                <th class="phone-column" style="display: none;">Phone Number</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for investment in available_investments %}
+                            <tr>
+                                <td>{{ investment.id }}</td>
+                                <td>${{ investment.amount }}</td>
+                                <td>{{ investment.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if investment.is_matured %}
+                                        ${{ investment.calculate_end_return|floatformat:2 }}
+                                    {% else %}
+                                        <span class="text-muted">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if investment.paired %}
+                                        <span class="badge bg-success">Paired</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Waiting to be Paired</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if investment.paired %}
+                                        {% if investment.is_matured %}
+                                            {{ investment.pairing.paired_investment.investor.user.username }}
+                                        {% else %}
+                                            <span class="text-muted">Hidden until maturity</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Not paired</span>
+                                    {% endif %}
+                                </td>
+                                <td class="phone-column" style="display: none;">
+                                    {% if investment.paired and investment.is_matured %}
+                                        <strong>{{ investment.pairing.paired_investment.investor.phone_number }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-primary btn-sm" 
+                                            onclick="showSellModal({{ investment.id }}, {{ investment.amount }})">
+                                        List for Sale
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            {% for sale in listed_sales %}
+                            <tr>
+                                <td>{{ sale.investment.id }}</td>
+                                <td>${{ sale.investment.amount }}</td>
+                                <td>{{ sale.investment.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if sale.investment.is_matured %}
+                                        ${{ sale.investment.calculate_end_return|floatformat:2 }}
+                                    {% else %}
+                                        <span class="text-muted">Pending</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if sale.investment.paired %}
+                                        <span class="badge bg-success">Paired</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Waiting to be Paired</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if sale.investment.paired %}
+                                        {% if sale.investment.is_matured %}
+                                            {{ sale.investment.pairing.paired_investment.investor.user.username }}
+                                        {% else %}
+                                            <span class="text-muted">Hidden until maturity</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">Not paired</span>
+                                    {% endif %}
+                                </td>
+                                <td class="phone-column" style="display: none;">
+                                    {% if sale.investment.paired and sale.investment.is_matured %}
+                                        <strong>{{ sale.investment.pairing.paired_investment.investor.phone_number }}</strong>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <button class="btn btn-danger btn-sm" 
+                                            onclick="cancelListing({{ sale.id }})">
+                                        Cancel Listing
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No investments available for sale.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Sell Modal -->
+<div class="modal fade" id="sellModal" tabindex="-1" aria-labelledby="sellModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sellModalLabel">List Investment for Sale</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sellForm">
+                    <input type="hidden" id="investmentId" name="investment_id">
+                    <div class="mb-3">
+                        <label for="investmentAmount" class="form-label">Investment Amount</label>
+                        <input type="text" class="form-control" id="investmentAmount" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="salePrice" class="form-label">Sale Price</label>
+                        <input type="number" class="form-control" id="salePrice" name="price" required min="0" step="0.01">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="submitSale()">List for Sale</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Check if any investments are matured and paired to show phone column
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneColumns = document.querySelectorAll('.phone-column');
+    let showPhoneColumn = false;
+    
+    phoneColumns.forEach(function(column) {
+        if (column.textContent.trim() !== '') {
+            showPhoneColumn = true;
+        }
+    });
+    
+    if (showPhoneColumn) {
+        phoneColumns.forEach(function(column) {
+            column.style.display = 'table-cell';
+        });
+    }
+});
+
+function showSellModal(investmentId, amount) {
+    document.getElementById('investmentId').value = investmentId;
+    document.getElementById('investmentAmount').value = '$' + amount;
+    document.getElementById('salePrice').value = amount;
+    new bootstrap.Modal(document.getElementById('sellModal')).show();
+}
+
+function submitSale() {
+    const form = document.getElementById('sellForm');
+    const formData = new FormData(form);
+    
+    fetch('{% url "api:sell_investment_api" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error listing investment for sale');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error listing investment for sale');
+    });
+}
+
+function cancelListing(saleId) {
+    if (confirm('Are you sure you want to cancel this listing?')) {
+        fetch(`/api/investments/sell/${saleId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Error canceling listing');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error canceling listing');
+        });
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %} 
