@@ -1,4 +1,4 @@
-# Referral Investment System
+# Loans
 
 A modern, responsive referral investment system with an admin dashboard, built with Vue.js, Express, and MongoDB.
 
@@ -151,4 +151,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-For support, email support@example.com or create an issue in the repository. 
+For support, email support@example.com or create an issue in the repository.
